@@ -52,6 +52,7 @@ targets:
     sources:
       - path: SnapBackTests
       - path: SnapBack/Gesture/SwipeDetector.swift
+      - path: SnapBack/Windows/WindowOrdering.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.snapback.SnapBackTests

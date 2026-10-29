@@ -25,6 +25,9 @@ jobs:
       - name: Build SwipeProbe
         run: xcodebuild -project SnapBack.xcodeproj -scheme SwipeProbe -configuration Debug -derivedDataPath build -quiet build
 
+      - name: Verify MultitouchSupport loads on this macOS
+        run: build/Build/Products/Debug/SwipeProbe --check
+
       - name: Unit tests
         run: xcodebuild -project SnapBack.xcodeproj -scheme SnapBack -configuration Debug -derivedDataPath build -destination 'platform=macOS' -quiet test
 

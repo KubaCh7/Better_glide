@@ -4,10 +4,13 @@ import Foundation
 // on the current macOS version. It logs finger-count changes and recognized swipes.
 //
 // Usage: SwipeProbe [fingerCount]   (default 3; Ctrl+C to quit)
+//        SwipeProbe --check          (only verify the private framework loads, then exit)
 
 setvbuf(stdout, nil, _IOLBF, 0)
 
-let fingerCount = CommandLine.arguments.dropFirst().first.flatMap(Int.init) ?? 3
+let arguments = CommandLine.arguments.dropFirst()
+let checkOnly = arguments.contains("--check")
+let fingerCount = arguments.compactMap(Int.init).first ?? 3
 let detector = SwipeDetector(configuration: SwipeConfiguration(fingerCount: fingerCount))
 var lastTouchingCount = -1
 
@@ -37,6 +40,11 @@ MultitouchBridge.frameHandler = { contacts, timestamp in
 }
 
 let devices = MultitouchBridge.start()
+if checkOnly {
+    print("OK: MultitouchSupport symbols resolved; \(devices) multitouch device(s) found.")
+    MultitouchBridge.stop()
+    exit(0)
+}
 print("Listening on \(devices) multitouch device(s) for \(fingerCount)-finger swipes. Ctrl+C to quit.")
 if devices == 0 {
     print("WARNING: no multitouch devices found (no trackpad connected?).")

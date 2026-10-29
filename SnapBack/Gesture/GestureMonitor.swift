@@ -7,7 +7,7 @@ import os
 /// is a handful of float additions, so idle cost is zero and active cost is negligible.
 final class GestureMonitor {
     /// Delivered on the main thread.
-    var onSwipe: (@MainActor (SwipeDirection) -> Void)?
+    var onSwipe: ((SwipeDirection) -> Void)?
 
     private let detector = SwipeDetector()
     private let lock = NSLock()
