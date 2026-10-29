@@ -25,8 +25,10 @@ final class LayoutStore {
 
     init(fileURL: URL = LayoutStore.defaultURL) {
         self.fileURL = fileURL
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601 // must match `persist()`
         if let data = try? Data(contentsOf: fileURL),
-           let decoded = try? JSONDecoder().decode([String: SavedLayout].self, from: data) {
+           let decoded = try? decoder.decode([String: SavedLayout].self, from: data) {
             layouts = decoded
         }
     }
