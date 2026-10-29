@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let windows = WindowPresenter()
     private let gestureFeed = GestureFeed()
     private var activationObserver: NSObjectProtocol?
+    private var indicatorRefresh: DispatchWorkItem?
     private let log = Logger(subsystem: "com.snapback.SnapBack", category: "app")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -62,7 +63,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func applySettings() {
         tracker.excludedBundleIDs = Set(settings.excludedBundleIDs)
         gestureMonitor.update(configuration: settings.swipeConfiguration)
-        menuBar?.refreshIndicator()
+        // Debounced: dragging the sensitivity slider fires many changes in a row.
+        indicatorRefresh?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.menuBar?.refreshIndicator() }
+        indicatorRefresh = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
     }
 
     // MARK: - Windows

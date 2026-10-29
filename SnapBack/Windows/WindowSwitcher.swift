@@ -10,6 +10,9 @@ final class WindowSwitcher {
     let tracker: WindowTracker
     private let settings: AppSettings
     private let overlay = HighlightOverlay()
+    /// Window we focused last and when. Focus changes reach the AX API asynchronously,
+    /// so a quick second swipe continues from here instead of a stale focused window.
+    private var lastTarget: (id: CGWindowID, date: Date)?
 
     /// Called after a successful switch (main thread).
     var onSwitch: ((TrackedWindow) -> Void)?
@@ -32,7 +35,11 @@ final class WindowSwitcher {
 
     func move(_ step: WindowStep) {
         let windows = tracker.orderedWindows()
-        let focused = tracker.focusedWindowID()
+        var focused = tracker.focusedWindowID()
+        if let lastTarget, Date().timeIntervalSince(lastTarget.date) < 1.0,
+           windows.contains(where: { $0.id == lastTarget.id }) {
+            focused = lastTarget.id
+        }
         let current = windows.firstIndex { $0.id == focused }
         guard let target = step.target(from: current, count: windows.count, wrap: settings.wrapAround) else {
             // At an edge: a light haptic "bump" instead of doing nothing silently.
@@ -44,6 +51,7 @@ final class WindowSwitcher {
 
     func focus(_ window: TrackedWindow, slideFrom offset: CGFloat = 0) {
         tracker.focus(window)
+        lastTarget = (window.id, Date())
         if settings.showHighlight {
             overlay.flash(frame: window.frame, slideFrom: offset)
         }
