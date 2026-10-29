@@ -46,8 +46,13 @@ struct OnboardingView: View {
                     }
                 } footer: {
                     if !screenRecording {
-                        RepairHint(text: "Włączone w Ustawieniach, a po ponownym uruchomieniu nadal bez ptaszka?",
-                                   action: Permissions.repairScreenRecording)
+                        VStack(alignment: .leading, spacing: 8) {
+                            RepairHint(text: "Nie ma BetterGlide na liście w Ustawieniach? Kliknij tu, przeciągnij BetterGlide z okna Findera na listę (albo „+” pod listą i wybierz BetterGlide), włącz przełącznik i uruchom ponownie.",
+                                       buttonTitle: "Pokaż w Finderze",
+                                       action: Permissions.revealAppInFinder)
+                            RepairHint(text: "Włączone w Ustawieniach, a po ponownym uruchomieniu nadal bez ptaszka?",
+                                       action: Permissions.repairScreenRecording)
+                        }
                     }
                 }
 
@@ -111,6 +116,7 @@ struct OnboardingView: View {
 /// "Already enabled but not detected" helper with a one-click repair.
 private struct RepairHint: View {
     let text: String
+    var buttonTitle = "Napraw"
     let action: () -> Void
 
     var body: some View {
@@ -120,7 +126,7 @@ private struct RepairHint: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer()
-            Button("Napraw", action: action)
+            Button(buttonTitle, action: action)
                 .glassButton()
                 .controlSize(.small)
         }

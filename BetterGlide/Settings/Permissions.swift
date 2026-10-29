@@ -1,5 +1,6 @@
 import AppKit
 import IOKit.hid
+import ScreenCaptureKit
 import ServiceManagement
 
 /// Permission checks and deep links into System Settings → Privacy & Security.
@@ -15,9 +16,30 @@ enum Permissions {
     /// Screen Recording: needed only for the sliding animation (snapshots of the screen).
     static var screenRecordingGranted: Bool { CGPreflightScreenCaptureAccess() }
 
+    /// On recent macOS, `CGRequestScreenCaptureAccess` alone often does not add the app to
+    /// the Screen Recording list (so there is no switch to turn on). A real ScreenCaptureKit
+    /// request does: it shows the system prompt and registers BetterGlide in the list.
     static func requestScreenRecording() {
         CGRequestScreenCaptureAccess()
-        openPrivacyPane("Privacy_ScreenCapture")
+        SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: true) { content, _ in
+            // A tiny real capture, in case listing content alone did not register the app.
+            guard let display = content?.displays.first else { return }
+            let config = SCStreamConfiguration()
+            config.width = 2
+            config.height = 2
+            let filter = SCContentFilter(display: display, excludingWindows: [])
+            SCScreenshotManager.captureImage(contentFilter: filter, configuration: config) { _, _ in }
+        }
+        // Give the system prompt a moment, then show the list.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            openPrivacyPane("Privacy_ScreenCapture")
+        }
+    }
+
+    /// Fallback when BetterGlide still is not in the list: show the app in Finder so it can
+    /// be dragged into the list (or picked with the + button).
+    static func revealAppInFinder() {
+        NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
     }
 
     /// macOS applies a newly granted Screen Recording permission only after a relaunch.
