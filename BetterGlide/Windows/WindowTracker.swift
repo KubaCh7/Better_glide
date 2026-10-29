@@ -79,11 +79,7 @@ final class WindowTracker {
         if !frontmostSet, let app = NSRunningApplication(processIdentifier: window.pid) {
             // Fallback; on macOS 14+ activation from a background app is "cooperative"
             // and may be refused, which is why the AX route above is preferred.
-            if #available(macOS 14.0, *) {
-                app.activate()
-            } else {
-                app.activate(options: [.activateIgnoringOtherApps])
-            }
+            app.activate()
         }
     }
 

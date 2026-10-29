@@ -3,7 +3,7 @@
 Aplikacja macOS działająca w pasku menu. Przełącza **zwykłe okna** (niezmaksymalizowane) gestem 3 lub 4 palców, w stałej, przestrzennej kolejności od lewej do prawej, tak jakby każde okno było osobnym pulpitem. Dodatkowo zapamiętuje układ okien osobno dla każdej konfiguracji monitorów i przywraca go po podłączeniu lub odłączeniu ekranu.
 
 - Swift, AppKit (pasek menu, nakładki) + SwiftUI (ustawienia, onboarding)
-- macOS 13 Ventura lub nowszy, Apple Silicon i Intel (CI buduje na macOS 15 z Xcode 16)
+- macOS 14 Sonoma lub nowszy, Apple Silicon i Intel (CI buduje na macOS 15 z Xcode 16)
 - Bez ikony w Docku (`LSUIElement`), bez sandboxa, dystrybucja poza App Store
 
 ## Instalacja (DMG)
@@ -58,6 +58,7 @@ Każdy push buduje projekt na GitHub Actions (`.github/workflows/build.yml`): pr
 | Uprawnienie | Po co | Wymagane |
 |---|---|---|
 | **Dostępność** (Prywatność i ochrona → Dostępność) | lista okien, podnoszenie i fokus, ustawianie pozycji i rozmiaru | tak |
+| **Nagrywanie ekranu** (Prywatność i ochrona → Nagrywanie ekranu) | animacja przesuwania: na czas gestu robiony jest zrzut ekranu, który przesuwa się pod palcami. Nic nie jest zapisywane. Po nadaniu trzeba uruchomić aplikację ponownie | tylko do animacji |
 | **Monitorowanie wprowadzania** | MultitouchSupport zwykle go nie potrzebuje; nadaj tylko, jeśli test gestu nic nie wykrywa | nie |
 
 Przy pierwszym uruchomieniu (oraz zawsze, gdy brakuje uprawnienia Dostępności) otwiera się okno konfiguracji. Prowadzi ono do właściwych paneli Ustawień systemowych, sprawdza konflikt z gestem systemowym i ma pole do testowania gestu na żywo. Później otworzysz je z menu: *Uprawnienia i konfiguracja gestu…*
@@ -86,8 +87,13 @@ BetterGlide/
 │  ├─ AXHelpers            typowane wrappery Accessibility + prywatne _AXUIElementGetWindow
 │  ├─ WindowTracker        okna z AX ∩ CGWindowList (tylko widoczne, standardowe, bieżący Space)
 │  ├─ WindowOrdering       stała kolejność przestrzenna (czysta logika, testowana)
-│  ├─ WindowSwitcher       swipe → następne/poprzednie okno → fokus, podświetlenie, haptyka
-│  └─ HighlightOverlay     animowana ramka wokół okna docelowego
+│  └─ WindowSwitcher       sąsiedzi aktywnego okna w kolejności przestrzennej, fokus
+├─ Transition/
+│  ├─ SlideTransitionController  przebieg gestu: śledzenie palców, decyzja dokończ/cofnij, haptyka na krawędzi
+│  ├─ SlideOverlay         warstwy Core Animation przesuwające „strony” jak Spaces
+│  ├─ ScreenSnapshotter    zrzuty ekranu i okna docelowego (ScreenCaptureKit)
+│  ├─ DisplayGeometry      obszar ekranu bez paska menu i Docka
+│  └─ SlideMath            próg, flick, gumowe odbicie (czysta logika, testowana)
 ├─ Layout/
 │  ├─ DisplayConfiguration odcisk konfiguracji: vendor/model/serial, rozdzielczość, ułożenie
 │  ├─ DisplayConfigObserver CGDisplayRegisterReconfigurationCallback + didChangeScreenParameters
@@ -107,7 +113,20 @@ BetterGlideTests/   testy logiki (bez uruchamiania aplikacji)
 
 Dlaczego w punkcie 3 nie ma bieżącego z-order: każde przełączenie zmienia z-order. Dwa okna leżące jedno na drugim zamieniałyby się wtedy miejscami po każdym geście i kolejność przestałaby być przewidywalna. Kolejność zmienia się tylko wtedy, gdy przesuniesz okno.
 
-Kierunek domyślny działa jak Spaces: palce w lewo przenoszą do okna po prawej. Można to odwrócić w ustawieniach. Na końcu listy gest się zatrzymuje i daje delikatny sygnał haptyczny; zawijanie (z ostatniego okna na pierwsze) można włączyć.
+Kierunek domyślny działa jak Spaces: palce w lewo przenoszą do okna po prawej. Można to odwrócić w ustawieniach. Na końcu listy ekran odbija się sprężyście i daje delikatny sygnał haptyczny; zawijanie (z ostatniego okna na pierwsze) można włączyć.
+
+### Animacja przesuwania (jak przy pulpitach)
+
+macOS nie pozwala użyć systemowej animacji Spaces dla zwykłych okien, więc BetterGlide ją odtwarza:
+
+1. Gdy rozpoznany zostanie poziomy ruch palców, BetterGlide robi zrzut obszaru ekranu (bez paska menu i Docka, które zostają na miejscu) oraz obrazy sąsiednich okien. Zajmuje to kilkadziesiąt ms.
+2. Na czas gestu nad ekranem pojawia się nakładka: bieżący „pulpit” przesuwa się za palcami 1:1, a z boku wjeżdża następny, czyli ten sam ekran z oknem docelowym na wierzchu (dokładnie tak będzie wyglądał po przełączeniu).
+3. Po puszczeniu palców:
+   - przesunięcie ponad ~35% szerokości albo szybki „flick” dokańcza przejście, a w tym czasie pod spodem wychodzi na wierzch prawdziwe okno i nakładka znika płynnym przenikaniem,
+   - mniejszy ruch powoduje, że ekran wraca na miejsce.
+4. Na końcu listy (bez zawijania) ekran stawia opór i odbija się jak gumka.
+
+Suwak *Czułość* zmienia, jak szybko ekran przesuwa się względem palców. Bez uprawnienia *Nagrywanie ekranu* (albo po wyłączeniu animacji) zasady dokończenia są takie same, tylko bez przesuwania.
 
 ### Pamięć układu
 
@@ -118,13 +137,13 @@ Kierunek domyślny działa jak Spaces: palce w lewo przenoszą do okna po prawej
 
 ### Zużycie CPU
 
-Nic nie jest odpytywane w pętli. Callback MultitouchSupport jest wywoływany tylko wtedy, gdy palce dotykają gładzika, a obsługa jednej ramki to kilka dodawań. Lista okien jest budowana na żądanie: przy geście, przy otwarciu menu i przy zapisie układu, co kosztuje kilka ms zapytań Accessibility. Jedyny zegar (zapis co 60 s, tolerancja 20 s) pozwala systemowi łączyć wybudzenia z innymi timerami.
+Nic nie jest odpytywane w pętli. Zrzuty ekranu powstają wyłącznie wtedy, gdy zaczyna się poziomy gest. Callback MultitouchSupport jest wywoływany tylko wtedy, gdy palce dotykają gładzika, a obsługa jednej ramki to kilka dodawań. Lista okien jest budowana na żądanie: przy geście, przy otwarciu menu i przy zapisie układu, co kosztuje kilka ms zapytań Accessibility. Jedyny zegar (zapis co 60 s, tolerancja 20 s) pozwala systemowi łączyć wybudzenia z innymi timerami.
 
 ## Testowanie ręczne
 
 **Etap (a), gest:** uruchom `make probe` i połóż 3 palce na gładziku. Powinna pojawić się linia `fingers: 3`, a po przesunięciu `>>> SWIPE LEFT/RIGHT`. Sprawdź też, że 2 i 4 palce oraz ruch pionowy nie wywołują swipe'a. Jeśli nic się nie loguje, nadaj Terminalowi „Monitorowanie wprowadzania” i spróbuj ponownie.
 
-**Etap (b), przełączanie:** ułóż 3 okna obok siebie (np. Safari po lewej, Notatki pośrodku, Terminal po prawej). Gest 3 palcami w lewo powinien przenosić fokus Safari → Notatki → Terminal, a na końcu dawać lekki „puk” haptyczny. Gest w prawo działa odwrotnie. Powtórz kilka razy: kolejność ma się nie zmieniać. Dwa okna tego samego programu (np. dwa okna Finder) też powinny się przełączać.
+**Etap (b), przełączanie i animacja:** ułóż 3 okna obok siebie (np. Safari po lewej, Notatki pośrodku, Terminal po prawej). Przesuwaj powoli 3 palcami w lewo: ekran powinien jechać za palcami, a z prawej wjeżdżać następny widok. Puść w połowie, a przejście się dokończy; puść na początku, a ekran wróci. Kolejność to Safari → Notatki → Terminal, a na końcu ekran odbija się z lekkim „pukiem” haptycznym. Gest w prawo działa odwrotnie. Powtórz kilka razy: kolejność ma się nie zmieniać. Dwa okna tego samego programu (np. dwa okna Finder) też powinny się przełączać.
 
 **Etap (c), menu bar:** ikona w pasku menu pokazuje `2/3`. Menu wyświetla okna w kolejności przestrzennej, a aktywne okno jest zaznaczone. Kliknięcie (albo klawisz 1–9 przy otwartym menu) aktywuje okno. W *Wykluczone aplikacje* zaznacz np. Terminal: zniknie z listy i z przełączania. Wyłącz *Przełączanie gestem*: ikona zmieni się, a gest przestanie działać.
 
@@ -134,11 +153,14 @@ Nic nie jest odpytywane w pętli. Callback MultitouchSupport jest wywoływany ty
 log stream --predicate 'subsystem == "com.betterglide.BetterGlide"' --level debug
 ```
 
-**Etap (e), ustawienia:** *Ustawienia…* (⌘, w menu). Zmień liczbę palców, a pole „Test” pokaże wykryty gest na żywo. Sprawdź suwak czułości, kierunek, zawijanie, podświetlenie i uruchamianie przy logowaniu (działa najlepiej z `/Applications`).
+**Etap (e), ustawienia:** *Ustawienia…* (⌘, w menu). Zmień liczbę palców, a pole „Test” pokaże wykryty gest na żywo. Sprawdź suwak czułości, kierunek, zawijanie, włączanie/wyłączanie animacji i uruchamianie przy logowaniu (działa najlepiej z `/Applications`).
 
 **CPU:** w Monitorze aktywności BetterGlide bez dotykania gładzika powinien pokazywać ~0,0% CPU.
 
 ## Znane ograniczenia
+
+- **Animacja to nakładka ze zrzutów ekranu, nie systemowy Space.** Treść, która się zmienia (np. wideo), jest na czas gestu „zamrożona”. Przy przełączeniu na okno z innego monitora animacja odbywa się na tamtym monitorze.
+- **Nagrywanie ekranu w macOS 15+:** system może co jakiś czas (np. raz w miesiącu) pytać, czy dalej pozwolić BetterGlide na nagrywanie ekranu, a podczas robienia zrzutu może na chwilę pokazać fioletowy wskaźnik nagrywania w pasku menu. Jeśli to przeszkadza, wyłącz animację w ustawieniach.
 
 - **Prywatne API.** MultitouchSupport (`MTDeviceCreateList`, `MTRegisterContactFrameCallback`, …) i `_AXUIElementGetWindow` są nieudokumentowane. Ładujemy je dynamicznie: jeśli Apple je usunie, aplikacja wystartuje, ale bez gestów (onboarding to pokaże). Z tego powodu aplikacja nie może trafić do App Store.
 - **Nie można „pochłonąć” gestu systemowego.** Patrz *Konflikt z gestem systemowym*.

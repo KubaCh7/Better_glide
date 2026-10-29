@@ -33,11 +33,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     }
 
     private func bringToFront(_ window: NSWindow) {
-        if #available(macOS 14.0, *) {
-            NSApp.activate()
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
-        }
+        NSApp.activate()
         window.makeKeyAndOrderFront(nil)
     }
 }

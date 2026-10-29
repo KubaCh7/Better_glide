@@ -1,13 +1,13 @@
 import AppKit
 import os
 
-/// Bridges raw MultitouchSupport frames to discrete swipe events on the main thread.
+/// Bridges raw MultitouchSupport frames to swipe events on the main thread.
 ///
 /// CPU: the private framework only calls us while fingers touch the trackpad; each frame
 /// is a handful of float additions, so idle cost is zero and active cost is negligible.
 final class GestureMonitor {
     /// Delivered on the main thread.
-    var onSwipe: ((SwipeDirection) -> Void)?
+    var onEvent: ((SwipeEvent) -> Void)?
 
     private let detector = SwipeDetector()
     private let lock = NSLock()
@@ -72,9 +72,10 @@ final class GestureMonitor {
         lock.unlock()
 
         let points = contacts.lazy.filter(\.isTouching).map { SwipeDetector.Point(x: $0.x, y: $0.y) }
-        guard let direction = detector.process(touching: Array(points), timestamp: timestamp) else { return }
+        let events = detector.process(touching: Array(points), timestamp: timestamp)
+        guard !events.isEmpty else { return }
         DispatchQueue.main.async { [weak self] in
-            self?.onSwipe?(direction)
+            for event in events { self?.onEvent?(event) }
         }
     }
 }

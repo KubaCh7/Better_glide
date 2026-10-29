@@ -20,6 +20,7 @@ struct SettingsView: View {
     @State private var loginError: String?
     @State private var trackpad = TrackpadPreferences.read()
     @State private var layoutsCleared = false
+    @State private var screenRecording = Permissions.screenRecordingGranted
 
     var body: some View {
         Form {
@@ -41,9 +42,9 @@ struct SettingsView: View {
 
                 LabeledContent("Czułość") {
                     HStack {
-                        Text("Długi ruch").font(.caption).foregroundStyle(.secondary)
+                        Text("Wolniej").font(.caption).foregroundStyle(.secondary)
                         Slider(value: $settings.sensitivity, in: 0...1)
-                        Text("Krótki ruch").font(.caption).foregroundStyle(.secondary)
+                        Text("Szybciej").font(.caption).foregroundStyle(.secondary)
                     }
                 }
 
@@ -52,7 +53,10 @@ struct SettingsView: View {
             }
 
             Section("Wygląd") {
-                Toggle("Podświetl ramkę okna po przełączeniu (animacja)", isOn: $settings.showHighlight)
+                Toggle("Animacja przesuwania ekranu (jak przy pulpitach)", isOn: $settings.slideAnimation)
+                if settings.slideAnimation && !screenRecording {
+                    ScreenRecordingNotice()
+                }
                 Toggle("Pokaż pozycję okna w pasku menu (np. 2/3)", isOn: $settings.showPositionInMenuBar)
             }
 
@@ -75,7 +79,7 @@ struct SettingsView: View {
             Section("Ogólne") {
                 Toggle("Przełączanie gestem włączone", isOn: $settings.isEnabled)
                 Toggle("Uruchamiaj przy logowaniu", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin) { enabled in
+                    .onChange(of: launchAtLogin) { _, enabled in
                         do {
                             try LoginItem.set(enabled)
                             loginError = LoginItem.needsApproval
@@ -97,6 +101,7 @@ struct SettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             trackpad = TrackpadPreferences.read()
             launchAtLogin = LoginItem.isEnabled
+            screenRecording = Permissions.screenRecordingGranted
         }
     }
 }
@@ -114,6 +119,23 @@ struct ConflictNotice: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button("Otwórz ustawienia Gładzika") { TrackpadPreferences.openTrackpadSettings() }
+        }
+    }
+}
+
+struct ScreenRecordingNotice: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Animacja wymaga uprawnienia „Nagrywanie ekranu”.", systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            Text("Służy wyłącznie do zrobienia zrzutu ekranu na czas animacji gestu — nic nie jest zapisywane ani wysyłane. Bez niego przełączanie działa, tylko bez przesuwania.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Button("Nadaj uprawnienie…") { Permissions.requestScreenRecording() }
+                Button("Uruchom ponownie BetterGlide") { Permissions.relaunch() }
+            }
         }
     }
 }

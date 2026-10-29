@@ -18,10 +18,11 @@ final class AppSettings: ObservableObject {
     @Published var isEnabled: Bool { didSet { store(isEnabled, Keys.enabled) } }
     @Published var fingerCount: Int { didSet { store(fingerCount, Keys.fingerCount) } }
     @Published var direction: Direction { didSet { store(direction.rawValue, Keys.direction) } }
-    /// 0 (needs a long swipe) ... 1 (very sensitive).
+    /// 0 (screen moves slowly under the fingers) ... 1 (moves fast).
     @Published var sensitivity: Double { didSet { store(sensitivity, Keys.sensitivity) } }
     @Published var wrapAround: Bool { didSet { store(wrapAround, Keys.wrapAround) } }
-    @Published var showHighlight: Bool { didSet { store(showHighlight, Keys.showHighlight) } }
+    /// Spaces-like sliding of the screen during the swipe (needs Screen Recording).
+    @Published var slideAnimation: Bool { didSet { store(slideAnimation, Keys.slideAnimation) } }
     @Published var showPositionInMenuBar: Bool { didSet { store(showPositionInMenuBar, Keys.showPosition) } }
     @Published var autoRestoreLayout: Bool { didSet { store(autoRestoreLayout, Keys.autoRestore) } }
     @Published var excludedBundleIDs: [String] { didSet { store(excludedBundleIDs, Keys.excluded) } }
@@ -33,7 +34,7 @@ final class AppSettings: ObservableObject {
         static let direction = "direction"
         static let sensitivity = "sensitivity"
         static let wrapAround = "wrapAround"
-        static let showHighlight = "showHighlight"
+        static let slideAnimation = "slideAnimation"
         static let showPosition = "showPositionInMenuBar"
         static let autoRestore = "autoRestoreLayout"
         static let excluded = "excludedBundleIDs"
@@ -49,7 +50,7 @@ final class AppSettings: ObservableObject {
             Keys.direction: Direction.natural.rawValue,
             Keys.sensitivity: 0.5,
             Keys.wrapAround: false,
-            Keys.showHighlight: true,
+            Keys.slideAnimation: true,
             Keys.showPosition: true,
             Keys.autoRestore: true,
             Keys.excluded: [String](),
@@ -65,7 +66,7 @@ final class AppSettings: ObservableObject {
         direction = Direction(rawValue: defaults.string(forKey: Keys.direction) ?? "") ?? .natural
         sensitivity = defaults.double(forKey: Keys.sensitivity)
         wrapAround = defaults.bool(forKey: Keys.wrapAround)
-        showHighlight = defaults.bool(forKey: Keys.showHighlight)
+        slideAnimation = defaults.bool(forKey: Keys.slideAnimation)
         showPositionInMenuBar = defaults.bool(forKey: Keys.showPosition)
         autoRestoreLayout = defaults.bool(forKey: Keys.autoRestore)
         excludedBundleIDs = defaults.stringArray(forKey: Keys.excluded) ?? []
@@ -73,9 +74,12 @@ final class AppSettings: ObservableObject {
     }
 
     var swipeConfiguration: SwipeConfiguration {
-        // Sensitivity 0 → 22% of the trackpad width, 1 → 6%.
-        let threshold = Float(0.22 - 0.16 * min(max(sensitivity, 0), 1))
-        return SwipeConfiguration(fingerCount: fingerCount, threshold: threshold)
+        SwipeConfiguration(fingerCount: fingerCount)
+    }
+
+    /// Screen widths moved per trackpad width of finger travel: 1.0 ... 2.5.
+    var slideGain: CGFloat {
+        1.0 + 1.5 * CGFloat(min(max(sensitivity, 0), 1))
     }
 
     func isExcluded(_ bundleID: String?) -> Bool {

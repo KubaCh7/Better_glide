@@ -33,9 +33,16 @@ MultitouchBridge.frameHandler = { contacts, timestamp in
                      timestamp, touching.count, states, positions))
     }
     let points = touching.map { SwipeDetector.Point(x: $0.x, y: $0.y) }
-    if let direction = detector.process(touching: points, timestamp: timestamp) {
-        print(String(format: "[%.3f] >>> SWIPE %@ (%d fingers)",
-                     timestamp, direction.rawValue.uppercased(), fingerCount))
+    for event in detector.process(touching: points, timestamp: timestamp) {
+        switch event {
+        case .changed(let dx):
+            print(String(format: "[%.3f]     dx %+.3f", timestamp, dx))
+        case .ended(let dx, let velocity):
+            print(String(format: "[%.3f] >>> SWIPE %@  dx %+.3f  velocity %+.2f/s",
+                         timestamp, dx < 0 ? "LEFT" : "RIGHT", dx, velocity))
+        default:
+            print(String(format: "[%.3f] %@", timestamp, String(describing: event)))
+        }
     }
 }
 

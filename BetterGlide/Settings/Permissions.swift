@@ -12,6 +12,24 @@ enum Permissions {
         IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted
     }
 
+    /// Screen Recording: needed only for the sliding animation (snapshots of the screen).
+    static var screenRecordingGranted: Bool { CGPreflightScreenCaptureAccess() }
+
+    static func requestScreenRecording() {
+        CGRequestScreenCaptureAccess()
+        openPrivacyPane("Privacy_ScreenCapture")
+    }
+
+    /// macOS applies a newly granted Screen Recording permission only after a relaunch.
+    static func relaunch() {
+        let path = Bundle.main.bundlePath
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", "sleep 0.5; /usr/bin/open \"$0\"", path]
+        try? task.run()
+        NSApp.terminate(nil)
+    }
+
     static func requestAccessibility() {
         AX.requestTrust()
         openPrivacyPane("Privacy_Accessibility")

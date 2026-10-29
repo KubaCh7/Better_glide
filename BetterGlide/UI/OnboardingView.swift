@@ -10,6 +10,7 @@ struct OnboardingView: View {
 
     @State private var accessibility = Permissions.accessibilityGranted
     @State private var inputMonitoring = Permissions.inputMonitoringGranted
+    @State private var screenRecording = Permissions.screenRecordingGranted
     @State private var trackpad = TrackpadPreferences.read()
     private let poll = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -26,12 +27,20 @@ struct OnboardingView: View {
                 Button("Nadaj dostęp…") { Permissions.requestAccessibility() }
             }
 
-            Step(number: 2, title: "Monitorowanie wprowadzania (opcjonalne)", done: inputMonitoring,
+            Step(number: 2, title: "Nagrywanie ekranu (do animacji)", done: screenRecording,
+                 text: "Pozwala zrobić zrzut ekranu na czas gestu, żeby ekran przesuwał się pod palcami jak przy pulpitach. Nic nie jest zapisywane. Po nadaniu uruchom BetterGlide ponownie.") {
+                VStack(alignment: .trailing) {
+                    Button("Nadaj dostęp…") { Permissions.requestScreenRecording() }
+                    Button("Uruchom ponownie") { Permissions.relaunch() }
+                }
+            }
+
+            Step(number: 3, title: "Monitorowanie wprowadzania (opcjonalne)", done: inputMonitoring,
                  text: "Zwykle niepotrzebne. Nadaj tylko, jeśli test gestu poniżej nic nie wykrywa.") {
                 Button("Otwórz ustawienia…") { Permissions.requestInputMonitoring() }
             }
 
-            Step(number: 3, title: "Gest gładzika", done: trackpad.conflict(for: settings.fingerCount) == nil,
+            Step(number: 4, title: "Gest gładzika", done: trackpad.conflict(for: settings.fingerCount) == nil,
                  text: "Wybierz liczbę palców. Systemowy gest o tej samej liczbie palców powinien być wyłączony lub przeniesiony.") {
                 Picker("", selection: $settings.fingerCount) {
                     Text("3 palce").tag(3)
@@ -69,6 +78,7 @@ struct OnboardingView: View {
         .onReceive(poll) { _ in
             accessibility = Permissions.accessibilityGranted
             inputMonitoring = Permissions.inputMonitoringGranted
+            screenRecording = Permissions.screenRecordingGranted
             trackpad = TrackpadPreferences.read()
         }
     }

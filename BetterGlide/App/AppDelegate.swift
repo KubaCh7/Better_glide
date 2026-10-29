@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let gestureMonitor = GestureMonitor()
     private let tracker = WindowTracker()
     private lazy var switcher = WindowSwitcher(tracker: tracker, settings: settings)
+    private lazy var slide = SlideTransitionController(switcher: switcher, settings: settings)
     private lazy var layoutManager = LayoutManager(tracker: tracker, settings: settings)
     private var menuBar: MenuBarController?
     private let windows = WindowPresenter()
@@ -36,9 +37,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         layoutManager.onRestore = { [weak self] in self?.menuBar?.refreshIndicator() }
         layoutManager.start()
-        gestureMonitor.onSwipe = { [weak self] direction in
+        slide.onSwipe = { [weak self] direction in
             self?.gestureFeed.last = GestureFeed.Event(direction: direction, date: Date())
-            self?.switcher.handle(direction)
+        }
+        gestureMonitor.onEvent = { [weak self] event in
+            self?.slide.handle(event)
         }
         gestureMonitor.start()
 
