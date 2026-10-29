@@ -16,13 +16,13 @@ struct OnboardingView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Witaj w SnapBack").font(.largeTitle.bold())
+                Text("Witaj w BetterGlide").font(.largeTitle.bold())
                 Text("Przełączaj zwykłe okna gestem, w stałej kolejności od lewej do prawej — jak pulpity.")
                     .foregroundStyle(.secondary)
             }
 
             Step(number: 1, title: "Dostępność (wymagane)", done: accessibility,
-                 text: "Pozwala SnapBack odczytać listę okien, podnieść wybrane okno i przywracać ich pozycje.") {
+                 text: "Pozwala BetterGlide odczytać listę okien, podnieść wybrane okno i przywracać ich pozycje.") {
                 Button("Nadaj dostęp…") { Permissions.requestAccessibility() }
             }
 

@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: macos-15
+    # Needed to publish the DMG as a GitHub Release.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -23,24 +26,53 @@ jobs:
         run: xcodegen generate
 
       - name: Build SwipeProbe
-        run: xcodebuild -project SnapBack.xcodeproj -scheme SwipeProbe -configuration Debug -derivedDataPath build -quiet build
+        run: xcodebuild -project BetterGlide.xcodeproj -scheme SwipeProbe -configuration Debug -derivedDataPath build -quiet build
 
       - name: Verify MultitouchSupport loads on this macOS
         run: build/Build/Products/Debug/SwipeProbe --check
 
       - name: Unit tests
-        run: xcodebuild -project SnapBack.xcodeproj -scheme SnapBack -configuration Debug -derivedDataPath build -destination 'platform=macOS' -quiet test
+        run: xcodebuild -project BetterGlide.xcodeproj -scheme BetterGlide -configuration Debug -derivedDataPath build -destination 'platform=macOS' -quiet test
 
-      - name: Build SnapBack (Release)
-        run: xcodebuild -project SnapBack.xcodeproj -scheme SnapBack -configuration Release -derivedDataPath build -quiet build
+      - name: Build BetterGlide (Release, universal)
+        run: >
+          xcodebuild -project BetterGlide.xcodeproj -scheme BetterGlide -configuration Release
+          -derivedDataPath build -destination 'generic/platform=macOS' -quiet
+          CURRENT_PROJECT_VERSION=${{ github.run_number }}
+          build
 
-      - name: Package
+      - name: Package DMG
         run: |
           mkdir -p dist
-          ditto -c -k --keepParent build/Build/Products/Release/SnapBack.app dist/SnapBack.zip
+          scripts/make-dmg.sh build/Build/Products/Release/BetterGlide.app dist/BetterGlide.dmg
           cp build/Build/Products/Debug/SwipeProbe dist/SwipeProbe
+          lipo -info build/Build/Products/Release/BetterGlide.app/Contents/MacOS/BetterGlide
+          codesign --verify --verbose build/Build/Products/Release/BetterGlide.app
 
       - uses: actions/upload-artifact@v4
         with:
-          name: SnapBack-${{ github.sha }}
+          name: BetterGlide-${{ github.sha }}
           path: dist/
+
+      # Every push to a branch (not pull requests) replaces the "latest-build" release,
+      # so the download link below always points to the newest DMG:
+      # https://github.com/<owner>/<repo>/releases/latest/download/BetterGlide.dmg
+      - name: Publish release
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest-build --cleanup-tag --yes || true
+          gh release create latest-build dist/BetterGlide.dmg \
+            --target "$GITHUB_SHA" \
+            --title "BetterGlide (build ${{ github.run_number }})" \
+            --latest \
+            --notes "Automatyczny build z gałęzi \`${GITHUB_REF_NAME}\`, commit ${GITHUB_SHA::7}.
+
+          **Instalacja:** otwórz BetterGlide.dmg i przeciągnij BetterGlide do folderu Aplikacje.
+
+          Aplikacja nie jest jeszcze notaryzowana przez Apple, więc przy pierwszym uruchomieniu wykonaj w Terminalu:
+          \`\`\`
+          xattr -dr com.apple.quarantine /Applications/BetterGlide.app
+          \`\`\`
+          (albo: Ustawienia systemowe → Prywatność i ochrona → „Otwórz mimo to”)."

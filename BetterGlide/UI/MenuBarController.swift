@@ -27,7 +27,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         statusItem.menu = menu
         if let button = statusItem.button {
             button.imagePosition = .imageLeading
-            button.toolTip = "SnapBack"
+            button.toolTip = "BetterGlide"
         }
         updateIndicator(position: nil)
     }
@@ -36,7 +36,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     func updateIndicator(position: WindowSwitcher.Position?) {
         guard let button = statusItem.button else { return }
         let symbol = settings.isEnabled ? "rectangle.split.3x1" : "rectangle.slash"
-        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "SnapBack")
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "BetterGlide")
         image?.isTemplate = true
         button.image = image
         if settings.isEnabled, settings.showPositionInMenuBar, let position {
@@ -58,7 +58,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
         if !AX.isTrusted {
             let item = addItem("⚠︎ Nadaj uprawnienie Dostępności…", action: #selector(openOnboarding))
-            item.toolTip = "Bez niego SnapBack nie widzi i nie przełącza okien."
+            item.toolTip = "Bez niego BetterGlide nie widzi i nie przełącza okien."
             menu.addItem(.separator())
         }
 
@@ -82,7 +82,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         addItem("Ustawienia…", action: #selector(openSettings), key: ",")
         addItem("Uprawnienia i konfiguracja gestu…", action: #selector(openOnboarding))
         menu.addItem(.separator())
-        addItem("Zakończ SnapBack", action: #selector(quit), key: "q")
+        addItem("Zakończ BetterGlide", action: #selector(quit), key: "q")
     }
 
     private func addWindowList() {

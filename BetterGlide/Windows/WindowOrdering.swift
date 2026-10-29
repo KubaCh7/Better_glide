@@ -7,7 +7,7 @@ import CoreGraphics
 /// 2. within a display, by the window's left edge; windows whose left edges are within
 ///    `columnTolerance` points of each other form one "column",
 /// 3. within a column, by `rank`: the order in which windows were first seen, seeded from
-///    the z-order (frontmost first) when SnapBack starts.
+///    the z-order (frontmost first) when BetterGlide starts.
 ///
 /// Why not live z-order for ties: focusing a window changes the z-order, so two stacked
 /// windows would keep swapping places and the order would no longer be predictable.

@@ -79,7 +79,7 @@ struct SettingsView: View {
                         do {
                             try LoginItem.set(enabled)
                             loginError = LoginItem.needsApproval
-                                ? "Zatwierdź SnapBack w Ustawieniach systemowych → Ogólne → Rzeczy otwierane podczas logowania."
+                                ? "Zatwierdź BetterGlide w Ustawieniach systemowych → Ogólne → Rzeczy otwierane podczas logowania."
                                 : nil
                         } catch {
                             loginError = error.localizedDescription

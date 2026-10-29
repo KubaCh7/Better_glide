@@ -13,7 +13,7 @@ final class GestureMonitor {
     private let lock = NSLock()
     private var pendingConfiguration: SwipeConfiguration?
     private var wakeObserver: NSObjectProtocol?
-    private let log = Logger(subsystem: "com.snapback.SnapBack", category: "gesture")
+    private let log = Logger(subsystem: "com.betterglide.BetterGlide", category: "gesture")
 
     var isAvailable: Bool { MultitouchBridge.isAvailable }
     private(set) var deviceCount = 0

@@ -1,7 +1,7 @@
-# XcodeGen spec — run `xcodegen generate` (or `make project`) to create SnapBack.xcodeproj.
-name: SnapBack
+# XcodeGen spec — run `xcodegen generate` (or `make project`) to create BetterGlide.xcodeproj.
+name: BetterGlide
 options:
-  bundleIdPrefix: com.snapback
+  bundleIdPrefix: com.betterglide
   deploymentTarget:
     macOS: "13.0"
   createIntermediateGroups: true
@@ -16,14 +16,14 @@ settings:
     CODE_SIGN_STYLE: Manual
     DEVELOPMENT_TEAM: ""
 targets:
-  SnapBack:
+  BetterGlide:
     type: application
     platform: macOS
     sources:
-      - path: SnapBack
+      - path: BetterGlide
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.snapback.SnapBack
+        PRODUCT_BUNDLE_IDENTIFIER: com.betterglide.BetterGlide
         INFOPLIST_FILE: Config/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         # No App Sandbox: Accessibility control of other apps and private
@@ -32,30 +32,30 @@ targets:
         ENABLE_HARDENED_RUNTIME: NO
     scheme:
       testTargets:
-        - SnapBackTests
+        - BetterGlideTests
   SwipeProbe:
     type: tool
     platform: macOS
     sources:
       - path: SwipeProbe
-      - path: SnapBack/Gesture/MultitouchBridge.swift
-      - path: SnapBack/Gesture/SwipeDetector.swift
+      - path: BetterGlide/Gesture/MultitouchBridge.swift
+      - path: BetterGlide/Gesture/SwipeDetector.swift
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.snapback.SwipeProbe
+        PRODUCT_BUNDLE_IDENTIFIER: com.betterglide.SwipeProbe
     scheme: {}
-  SnapBackTests:
+  BetterGlideTests:
     type: bundle.unit-test
     platform: macOS
     # Logic-only tests: the pure source files are compiled straight into the
     # test bundle, so the menu bar app is never launched as a test host.
     sources:
-      - path: SnapBackTests
-      - path: SnapBack/Gesture/SwipeDetector.swift
-      - path: SnapBack/Windows/WindowOrdering.swift
-      - path: SnapBack/Layout/LayoutStore.swift
-      - path: SnapBack/Layout/DisplayConfiguration.swift
+      - path: BetterGlideTests
+      - path: BetterGlide/Gesture/SwipeDetector.swift
+      - path: BetterGlide/Windows/WindowOrdering.swift
+      - path: BetterGlide/Layout/LayoutStore.swift
+      - path: BetterGlide/Layout/DisplayConfiguration.swift
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.snapback.SnapBackTests
+        PRODUCT_BUNDLE_IDENTIFIER: com.betterglide.BetterGlideTests
         GENERATE_INFOPLIST_FILE: YES

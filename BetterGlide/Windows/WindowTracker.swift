@@ -29,7 +29,7 @@ final class WindowTracker {
     private var ranks: [CGWindowID: Int] = [:]
     private var nextRank = 0
     private let ownPID = ProcessInfo.processInfo.processIdentifier
-    private let log = Logger(subsystem: "com.snapback.SnapBack", category: "windows")
+    private let log = Logger(subsystem: "com.betterglide.BetterGlide", category: "windows")
 
     private struct CGEntry {
         let pid: pid_t

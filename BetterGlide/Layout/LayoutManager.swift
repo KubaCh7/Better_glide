@@ -18,7 +18,7 @@ final class LayoutManager {
     private var timer: Timer?
     private var workspaceObservers: [NSObjectProtocol] = []
     private var restoreWork: [DispatchWorkItem] = []
-    private let log = Logger(subsystem: "com.snapback.SnapBack", category: "layout")
+    private let log = Logger(subsystem: "com.betterglide.BetterGlide", category: "layout")
 
     /// Called after a restore (e.g. to refresh the menu bar indicator).
     var onRestore: (() -> Void)?

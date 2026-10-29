@@ -18,7 +18,7 @@ struct SavedLayout: Codable, Equatable {
 }
 
 /// Persists layouts per display configuration in
-/// `~/Library/Application Support/SnapBack/layouts.json`.
+/// `~/Library/Application Support/BetterGlide/layouts.json`.
 final class LayoutStore {
     private(set) var layouts: [String: SavedLayout] = [:]
     private let fileURL: URL
@@ -35,7 +35,7 @@ final class LayoutStore {
 
     static var defaultURL: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return base.appendingPathComponent("SnapBack", isDirectory: true)
+        return base.appendingPathComponent("BetterGlide", isDirectory: true)
             .appendingPathComponent("layouts.json")
     }
 
@@ -67,7 +67,7 @@ final class LayoutStore {
             encoder.dateEncodingStrategy = .iso8601
             try encoder.encode(layouts).write(to: fileURL, options: .atomic)
         } catch {
-            NSLog("SnapBack: failed to save layouts: \(error)")
+            NSLog("BetterGlide: failed to save layouts: \(error)")
         }
     }
 }

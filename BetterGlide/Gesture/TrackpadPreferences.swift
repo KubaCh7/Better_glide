@@ -1,6 +1,6 @@
 import AppKit
 
-/// Reads the system trackpad gesture settings to detect conflicts with SnapBack's swipe.
+/// Reads the system trackpad gesture settings to detect conflicts with BetterGlide's swipe.
 ///
 /// UNDOCUMENTED: these preference keys are what System Settings → Trackpad → More Gestures
 /// writes. They have been stable for many macOS releases but are not public API.
@@ -36,7 +36,7 @@ struct TrackpadPreferences {
         return nil
     }
 
-    /// Finger count SnapBack should default to on first launch.
+    /// Finger count BetterGlide should default to on first launch.
     var recommendedFingerCount: Int {
         if conflict(for: 3) == nil { return 3 }
         if conflict(for: 4) == nil { return 4 }

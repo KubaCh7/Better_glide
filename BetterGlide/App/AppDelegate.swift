@@ -13,7 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let gestureFeed = GestureFeed()
     private var activationObserver: NSObjectProtocol?
     private var indicatorRefresh: DispatchWorkItem?
-    private let log = Logger(subsystem: "com.snapback.SnapBack", category: "app")
+    private let log = Logger(subsystem: "com.betterglide.BetterGlide", category: "app")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Global AX timeout: an unresponsive app must never block the main thread for long.
@@ -73,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Windows
 
     private func showSettings() {
-        windows.show(id: "settings", title: "Ustawienia SnapBack") {
+        windows.show(id: "settings", title: "Ustawienia BetterGlide") {
             SettingsView(
                 settings: settings,
                 feed: gestureFeed,
@@ -84,7 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showOnboarding() {
-        windows.show(id: "onboarding", title: "SnapBack — konfiguracja") {
+        windows.show(id: "onboarding", title: "BetterGlide — konfiguracja") {
             OnboardingView(
                 settings: settings,
                 feed: gestureFeed,

@@ -1,11 +1,11 @@
-# SnapBack — convenience targets. Requires Xcode 15+ and XcodeGen (`brew install xcodegen`).
-PROJECT  := SnapBack.xcodeproj
+# BetterGlide — convenience targets. Requires Xcode 15+ and XcodeGen (`brew install xcodegen`).
+PROJECT  := BetterGlide.xcodeproj
 DERIVED  := build
 DEBUG    := $(DERIVED)/Build/Products/Debug
 RELEASE  := $(DERIVED)/Build/Products/Release
 XCB      := xcodebuild -project $(PROJECT) -derivedDataPath $(DERIVED) -quiet
 
-.PHONY: project build release test probe run install clean
+.PHONY: project build release test probe run install dmg clean
 
 $(PROJECT): project.yml
 	xcodegen generate
@@ -13,13 +13,13 @@ $(PROJECT): project.yml
 project: $(PROJECT)
 
 build: $(PROJECT)
-	$(XCB) -scheme SnapBack -configuration Debug build
+	$(XCB) -scheme BetterGlide -configuration Debug build
 
 release: $(PROJECT)
-	$(XCB) -scheme SnapBack -configuration Release build
+	$(XCB) -scheme BetterGlide -configuration Release build
 
 test: $(PROJECT)
-	$(XCB) -scheme SnapBack -configuration Debug -destination 'platform=macOS' test
+	$(XCB) -scheme BetterGlide -configuration Debug -destination 'platform=macOS' test
 
 # Stage (a) prototype: logs finger counts and swipes. Usage: make probe [FINGERS=4]
 FINGERS ?= 3
@@ -28,14 +28,17 @@ probe: $(PROJECT)
 	$(DEBUG)/SwipeProbe $(FINGERS)
 
 run: build
-	open $(DEBUG)/SnapBack.app
+	open $(DEBUG)/BetterGlide.app
 
 # Installing to /Applications keeps the Accessibility grant stable between launches
 # and is required for reliable launch-at-login.
 install: release
-	rm -rf /Applications/SnapBack.app
-	cp -R $(RELEASE)/SnapBack.app /Applications/
-	open /Applications/SnapBack.app
+	rm -rf /Applications/BetterGlide.app
+	cp -R $(RELEASE)/BetterGlide.app /Applications/
+	open /Applications/BetterGlide.app
+
+dmg: release
+	scripts/make-dmg.sh $(RELEASE)/BetterGlide.app $(DERIVED)/BetterGlide.dmg
 
 clean:
 	rm -rf $(DERIVED) $(PROJECT)
