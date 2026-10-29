@@ -6,11 +6,9 @@ struct UpdateView: View {
 
     var body: some View {
         ZStack {
-            GlassBackdrop()
             VStack(alignment: .leading, spacing: 18) {
                 GlassHeader(title: "Aktualizacje",
                             subtitle: "Zainstalowana wersja \(updates.currentVersion) (build \(updates.currentBuild))")
-                    .foregroundStyle(.white)
 
                 status
                     .padding(18)
@@ -32,7 +30,7 @@ struct UpdateView: View {
                     if let checked = updates.lastChecked {
                         Text("Sprawdzono \(checked.formatted(date: .omitted, time: .shortened))")
                             .font(.caption)
-                            .foregroundStyle(.white.opacity(0.8))
+                            .foregroundStyle(.secondary)
                     }
                     Spacer()
                     Button("Zamknij", action: onClose)
@@ -41,6 +39,7 @@ struct UpdateView: View {
                 }
             }
             .padding(24)
+            .padding(.top, 12) // room for the transparent title bar
         }
         .frame(width: 520)
         .onAppear {
@@ -70,7 +69,7 @@ struct UpdateView: View {
                     Text("Opublikowano \(date.formatted(date: .abbreviated, time: .shortened))")
                         .foregroundStyle(.secondary)
                 }
-                Text("Po instalacji BetterGlide uruchomi się ponownie. Uprawnienia pozostaną, jeśli build jest podpisany stałym certyfikatem (patrz README).")
+                Text("Po instalacji BetterGlide uruchomi się ponownie. Nadane uprawnienia zostaną zachowane.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -92,15 +91,15 @@ struct UpdateView: View {
         switch updates.state {
         case .available(let release):
             Button("Zainstaluj i uruchom ponownie") { updates.install(release) }
-                .glassButton(prominent: true)
+                .glassButton()
                 .keyboardShortcut(.defaultAction)
         case .downloading:
             Button("Instalowanie…") {}
-                .glassButton(prominent: true)
+                .glassButton()
                 .disabled(true)
         default:
             Button("Sprawdź ponownie") { updates.check() }
-                .glassButton(prominent: true)
+                .glassButton()
                 .disabled(updates.state == .checking)
         }
     }

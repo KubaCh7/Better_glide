@@ -2,7 +2,7 @@
 """Generates the BetterGlide app icon (Liquid Glass style) into the asset catalog.
 
 Usage: python3 scripts/make-icon.py   (requires Pillow)
-Design: macOS icon grid (824 pt squircle on a 1024 canvas), deep blue→violet glass body,
+Design: macOS icon grid (824 pt squircle on a 1024 canvas), neutral gray glass body (like macOS 26 clear/gray icons),
 three frosted "window" panes in a row with the middle one in front, and a soft top sheen.
 """
 import json
@@ -43,14 +43,14 @@ def frosted_pane(canvas, box, radius, tint_alpha, rim_alpha):
     cy = y0 + (y1 - y0) * 0.09
     for i in range(3):
         cx = x0 + (x1 - x0) * 0.11 + i * r * 3.2
-        d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(255, 255, 255, 230))
+        d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(120, 122, 132, 220))
     return out
 
 
 def shadow(size, box, radius, alpha, blur, offset):
     layer = Image.new("RGBA", size, (0, 0, 0, 0))
     x0, y0, x1, y1 = box
-    ImageDraw.Draw(layer).rounded_rectangle((x0, y0 + offset, x1, y1 + offset), radius=radius, fill=(10, 10, 40, alpha))
+    ImageDraw.Draw(layer).rounded_rectangle((x0, y0 + offset, x1, y1 + offset), radius=radius, fill=(20, 20, 30, alpha))
     return layer.filter(ImageFilter.GaussianBlur(blur))
 
 
@@ -63,12 +63,12 @@ def make_master():
 
     canvas = Image.alpha_composite(canvas, shadow(size, body_box, body_radius, 120, 40, 24))
 
-    body = vertical_gradient(size, (40, 110, 255, 255), (120, 60, 230, 255))
+    body = vertical_gradient(size, (238, 239, 243, 255), (150, 153, 162, 255))
     glow = Image.new("RGBA", size, (0, 0, 0, 0))
-    ImageDraw.Draw(glow).ellipse((m - 200, m - 300, S * 0.75, S * 0.62), fill=(90, 220, 255, 150))
+    ImageDraw.Draw(glow).ellipse((m - 200, m - 300, S * 0.75, S * 0.62), fill=(255, 255, 255, 170))
     body = Image.alpha_composite(body, glow.filter(ImageFilter.GaussianBlur(180)))
     glow2 = Image.new("RGBA", size, (0, 0, 0, 0))
-    ImageDraw.Draw(glow2).ellipse((S * 0.5, S * 0.55, S + 200, S + 300), fill=(255, 110, 210, 120))
+    ImageDraw.Draw(glow2).ellipse((S * 0.5, S * 0.55, S + 200, S + 300), fill=(105, 110, 125, 110))
     body = Image.alpha_composite(body, glow2.filter(ImageFilter.GaussianBlur(200)))
     mask = rounded_mask(size, body_box, body_radius)
     canvas.paste(body, (0, 0), mask)
@@ -81,9 +81,9 @@ def make_master():
     mid = ((S - mid_w) / 2, cy0, (S + mid_w) / 2, cy1)
     for box in (left, right):
         canvas = Image.alpha_composite(canvas, shadow(size, box, 60, 70, 24, 14))
-        canvas = frosted_pane(canvas, box, 60, 55, 150)
+        canvas = frosted_pane(canvas, box, 60, 100, 220)
     canvas = Image.alpha_composite(canvas, shadow(size, mid, 70, 130, 34, 22))
-    canvas = frosted_pane(canvas, mid, 70, 95, 235)
+    canvas = frosted_pane(canvas, mid, 70, 165, 255)
 
     # Glide arrows under the panes.
     d = ImageDraw.Draw(canvas)
@@ -91,7 +91,7 @@ def make_master():
     for direction in (-1, 1):
         cx = S / 2 + direction * S * 0.09
         tip = cx + direction * S * 0.05
-        d.line([(cx, ay - 55), (tip, ay), (cx, ay + 55)], fill=(255, 255, 255, 230), width=34, joint="curve")
+        d.line([(cx, ay - 55), (tip, ay), (cx, ay + 55)], fill=(72, 74, 84, 235), width=34, joint="curve")
 
     # Top sheen (the "liquid" highlight) clipped to the body.
     w, h = size
@@ -104,7 +104,7 @@ def make_master():
                                                            Image.new("RGBA", size, (0, 0, 0, 0)), sheen_mask))
     # Thin bright rim around the body.
     rim = Image.new("RGBA", size, (0, 0, 0, 0))
-    ImageDraw.Draw(rim).rounded_rectangle(body_box, radius=body_radius, outline=(255, 255, 255, 90), width=8)
+    ImageDraw.Draw(rim).rounded_rectangle(body_box, radius=body_radius, outline=(255, 255, 255, 160), width=8)
     canvas = Image.alpha_composite(canvas, rim)
     return canvas.resize((1024, 1024), Image.LANCZOS)
 

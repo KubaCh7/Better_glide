@@ -30,6 +30,27 @@ enum Permissions {
         NSApp.terminate(nil)
     }
 
+    /// Removes BetterGlide's entries from the privacy database (only its own, by bundle ID).
+    /// Needed when the switch in System Settings belongs to an older signature of the app:
+    /// it then shows as "on" but does not apply. The next request adds a fresh entry.
+    static func resetEntries(_ services: [String] = ["Accessibility", "ScreenCapture"]) {
+        guard let bundleID = Bundle.main.bundleIdentifier else { return }
+        for service in services {
+            Shell.run("/usr/bin/tccutil", ["reset", service, bundleID])
+        }
+    }
+
+    /// "Switch is on but BetterGlide does not see it": clear the stale entry and ask again.
+    static func repairAccessibility() {
+        resetEntries(["Accessibility"])
+        requestAccessibility()
+    }
+
+    static func repairScreenRecording() {
+        resetEntries(["ScreenCapture"])
+        requestScreenRecording()
+    }
+
     static func requestAccessibility() {
         AX.requestTrust()
         openPrivacyPane("Privacy_Accessibility")

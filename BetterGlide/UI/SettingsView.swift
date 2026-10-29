@@ -86,7 +86,7 @@ struct SettingsView: View {
                     Text(updateStatus).foregroundStyle(.secondary)
                     Spacer()
                     Button(updates.availableRelease == nil ? "Sprawdź teraz" : "Zainstaluj…", action: showUpdates)
-                        .glassButton(prominent: updates.availableRelease != nil)
+                        .glassButton()
                 }
             }
 
@@ -162,7 +162,7 @@ struct ScreenRecordingNotice: View {
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Button("Nadaj uprawnienie…") { Permissions.requestScreenRecording() }
-                    .glassButton(prominent: true)
+                    .glassButton()
                 Button("Uruchom ponownie BetterGlide") { Permissions.relaunch() }
                     .glassButton()
             }

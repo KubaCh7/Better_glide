@@ -16,26 +16,38 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            GlassBackdrop()
             VStack(alignment: .leading, spacing: 14) {
                 GlassHeader(title: "Witaj w BetterGlide",
                             subtitle: "Przełączaj zwykłe okna gestem — jak pulpity.")
-                    .foregroundStyle(.white)
                     .padding(.bottom, 4)
 
                 Step(number: 1, title: "Dostępność (wymagane)", done: accessibility,
                      text: "Pozwala BetterGlide odczytać listę okien, podnieść wybrane okno i przywracać ich pozycje.") {
-                    Button("Nadaj dostęp…") { Permissions.requestAccessibility() }
-                        .glassButton(prominent: !accessibility)
+                    if !accessibility {
+                        Button("Nadaj dostęp…") { Permissions.requestAccessibility() }
+                            .glassButton()
+                    }
+                } footer: {
+                    if !accessibility {
+                        RepairHint(text: "Przełącznik w Ustawieniach jest już włączony, a tu nie ma ptaszka? To wpis po starszej wersji aplikacji.",
+                                   action: Permissions.repairAccessibility)
+                    }
                 }
 
                 Step(number: 2, title: "Nagrywanie ekranu (do animacji)", done: screenRecording,
                      text: "Zrzut ekranu na czas gestu, żeby ekran przesuwał się pod palcami jak przy pulpitach. Nic nie jest zapisywane. Po nadaniu uruchom BetterGlide ponownie.") {
-                    VStack(alignment: .trailing, spacing: 6) {
-                        Button("Nadaj dostęp…") { Permissions.requestScreenRecording() }
-                            .glassButton(prominent: !screenRecording)
-                        Button("Uruchom ponownie") { Permissions.relaunch() }
-                            .glassButton()
+                    if !screenRecording {
+                        VStack(alignment: .trailing, spacing: 6) {
+                            Button("Nadaj dostęp…") { Permissions.requestScreenRecording() }
+                                .glassButton()
+                            Button("Uruchom ponownie") { Permissions.relaunch() }
+                                .glassButton()
+                        }
+                    }
+                } footer: {
+                    if !screenRecording {
+                        RepairHint(text: "Włączone w Ustawieniach, a po ponownym uruchomieniu nadal bez ptaszka?",
+                                   action: Permissions.repairScreenRecording)
                     }
                 }
 
@@ -79,12 +91,12 @@ struct OnboardingView: View {
                         settings.hasCompletedOnboarding = true
                         onDone()
                     }
-                    .glassButton(prominent: true)
+                    .glassButton()
                     .keyboardShortcut(.defaultAction)
                 }
             }
             .padding(24)
-            .padding(.top, 16) // room for the transparent title bar
+            .padding(.top, 12) // room for the transparent title bar
         }
         .frame(width: 600)
         .onReceive(poll) { _ in
@@ -93,6 +105,26 @@ struct OnboardingView: View {
             screenRecording = Permissions.screenRecordingGranted
             trackpad = TrackpadPreferences.read()
         }
+    }
+}
+
+/// "Already enabled but not detected" helper with a one-click repair.
+private struct RepairHint: View {
+    let text: String
+    let action: () -> Void
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+            Button("Napraw", action: action)
+                .glassButton()
+                .controlSize(.small)
+        }
+        .padding(.leading, 36)
     }
 }
 

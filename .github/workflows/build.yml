@@ -42,26 +42,6 @@ jobs:
           CURRENT_PROJECT_VERSION=${{ github.run_number }}
           build
 
-      # With the SIGNING_CERT_* secrets (scripts/create-signing-certificate.sh) builds keep the
-      # same identity, so macOS keeps Accessibility/Screen Recording across in-app updates.
-      - name: Sign
-        env:
-          SIGNING_CERT_P12: ${{ secrets.SIGNING_CERT_P12 }}
-          SIGNING_CERT_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
-        run: |
-          APP=build/Build/Products/Release/BetterGlide.app
-          if [ -n "$SIGNING_CERT_P12" ]; then
-            scripts/sign-app.sh "$APP"
-          else
-            echo "::warning::No SIGNING_CERT_P12 secret: release stays ad-hoc signed, so permissions reset after each update."
-            # Self-test of the signing pipeline with a throwaway certificate on a copy of the app.
-            scripts/create-signing-certificate.sh --local-only "$RUNNER_TEMP/test-cert"
-            cp -R "$APP" "$RUNNER_TEMP/SignTest.app"
-            SIGNING_CERT_P12="$(cat "$RUNNER_TEMP/test-cert/cert.p12.base64")" \
-            SIGNING_CERT_PASSWORD="$(cat "$RUNNER_TEMP/test-cert/password.txt")" \
-              scripts/sign-app.sh "$RUNNER_TEMP/SignTest.app"
-          fi
-
       - name: Package DMG
         run: |
           mkdir -p dist
@@ -95,8 +75,4 @@ jobs:
 
           **Instalacja:** otwórz BetterGlide.dmg i przeciągnij BetterGlide do folderu Aplikacje.
 
-          Aplikacja nie jest jeszcze notaryzowana przez Apple, więc przy pierwszym uruchomieniu wykonaj w Terminalu:
-          \`\`\`
-          xattr -dr com.apple.quarantine /Applications/BetterGlide.app
-          \`\`\`
-          (albo: Ustawienia systemowe → Prywatność i ochrona → „Otwórz mimo to”)."
+          Przy pierwszym otwarciu macOS zapyta o zgodę, bo aplikacja nie jest notaryzowana przez Apple: otwórz *Ustawienia systemowe → Prywatność i ochrona* i kliknij **Otwórz mimo to**. Dalej wszystko dzieje się w aplikacji."

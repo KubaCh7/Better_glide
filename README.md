@@ -3,22 +3,30 @@
 Aplikacja macOS działająca w pasku menu. Przełącza **zwykłe okna** (niezmaksymalizowane) gestem 3 lub 4 palców, w stałej, przestrzennej kolejności od lewej do prawej, tak jakby każde okno było osobnym pulpitem. Dodatkowo zapamiętuje układ okien osobno dla każdej konfiguracji monitorów i przywraca go po podłączeniu lub odłączeniu ekranu.
 
 - Swift, AppKit (pasek menu, nakładki) + SwiftUI (ustawienia, onboarding, aktualizacje)
-- Wygląd Liquid Glass na macOS 26+ (szklane panele i przyciski `glassEffect`, systemowe kontrolki z SDK 26); na macOS 14–15 materiały (`regularMaterial`)
+- Neutralny (szary) Liquid Glass na macOS 26+ (szklane panele i przyciski `glassEffect`, systemowe kontrolki z SDK 26); na macOS 14–15 materiały (`regularMaterial`)
 - macOS 14 Sonoma lub nowszy, Apple Silicon i Intel (CI buduje na macOS 26 z Xcode 26)
 - Bez ikony w Docku (`LSUIElement`), bez sandboxa, dystrybucja poza App Store
 
-## Instalacja (DMG)
+## Instalacja (DMG) — bez Terminala
 
-1. Pobierz **[BetterGlide.dmg](https://github.com/KubaCh7/Better_glide/releases/latest/download/BetterGlide.dmg)** (zawsze najnowszy build; lista wersji: [Releases](https://github.com/KubaCh7/Better_glide/releases)).
+1. Pobierz **[BetterGlide.dmg](https://github.com/KubaCh7/Better_glide/releases/latest/download/BetterGlide.dmg)** (zawsze najnowszy build).
 2. Otwórz plik i przeciągnij **BetterGlide** na skrót **Applications**.
-3. Aplikacja nie jest jeszcze podpisana certyfikatem Developer ID ani notaryzowana, więc macOS zablokuje pierwsze uruchomienie. Zdejmij blokadę w Terminalu:
+3. Uruchom BetterGlide. Aplikacja nie jest notaryzowana przez Apple, więc macOS za pierwszym razem ją zablokuje. Otwórz *Ustawienia systemowe → Prywatność i ochrona*, przewiń w dół i kliknij **Otwórz mimo to**.
+4. Przy pierwszym starcie BetterGlide na sekundę się zamknie i otworzy ponownie (patrz niżej). Potem okno konfiguracji poprowadzi Cię przez uprawnienia: *Nadaj dostęp…* otwiera właściwy panel Ustawień systemowych.
 
-   ```bash
-   xattr -dr com.apple.quarantine /Applications/BetterGlide.app
-   ```
+Ikona pojawi się w pasku menu, nie w Docku. Jeśli otworzysz aplikację prosto z DMG albo z Pobranych, sama przeniesie się do folderu Aplikacje.
 
-   Alternatywnie spróbuj ją otworzyć, a potem wybierz *Ustawienia systemowe → Prywatność i ochrona → Otwórz mimo to*.
-4. Uruchom BetterGlide z Aplikacji. Ikona pojawi się w pasku menu (nie w Docku), a okno konfiguracji poprowadzi przez nadanie uprawnienia Dostępności.
+### Dlaczego uprawnienia czasem „nie zaliczały się” i jak to jest rozwiązane
+
+macOS zapisuje zgodę na *Dostępność* i *Nagrywanie ekranu* dla konkretnego podpisu aplikacji. Buildy z GitHuba są podpisane ad hoc, więc każdy wygląda jak inna aplikacja. Przełącznik w Ustawieniach systemowych był wtedy włączony, ale dotyczył starej wersji, a nowa go nie widziała.
+
+Teraz BetterGlide przy pierwszym uruchomieniu:
+
+1. tworzy własny certyfikat podpisu na tym Macu (w prywatnym pęku kluczy w `~/Library/Application Support/BetterGlide/Signing`),
+2. podpisuje nim swoją kopię w folderze Aplikacje i uruchamia się ponownie,
+3. usuwa nieaktualne wpisy uprawnień po starszych wersjach (tylko swoje, przez `tccutil reset` dla swojego identyfikatora), więc prośba o dostęp pojawia się na czysto.
+
+Każda aktualizacja jest podpisywana tym samym certyfikatem, więc **uprawnienia nadajesz raz i zostają**. Gdyby przełącznik był włączony, a w oknie konfiguracji nie było ptaszka, kliknij **Napraw**: aplikacja usunie stary wpis i poprosi ponownie.
 
 ### Aktualizacje w aplikacji
 
@@ -26,22 +34,10 @@ BetterGlide sam sprawdza aktualizacje: 15 s po uruchomieniu, a potem raz dzienni
 
 Instalacja przebiega tak:
 
-1. Pobierany jest `BetterGlide.dmg` z najnowszego release'u.
-2. Aplikacja ze środka jest sprawdzana: zgodny identyfikator i poprawny podpis.
-3. Stara wersja jest podmieniana w tym samym miejscu (np. `/Applications`), a nowa uruchamia się sama. Jeśli kopiowanie się nie uda, wraca poprzednia wersja.
-4. Plik pobrany przez aplikację nie dostaje flagi kwarantanny, więc `xattr` nie jest już potrzebne.
-
-### Jednorazowo: stały podpis, żeby aktualizacje nie kasowały uprawnień
-
-macOS przypisuje zgody na *Dostępność* i *Nagrywanie ekranu* do podpisu aplikacji. Buildy podpisane ad hoc mają za każdym razem inny podpis, więc **po każdej aktualizacji trzeba by nadawać uprawnienia od nowa**. Rozwiązanie bez płatnego konta Apple Developer to własny certyfikat. Na Macu, w katalogu repozytorium, uruchom:
-
-```bash
-scripts/create-signing-certificate.sh
-```
-
-Skrypt tworzy certyfikat w `~/BetterGlide-signing` i zapisuje go w GitHubie jako sekrety `SIGNING_CERT_P12` i `SIGNING_CERT_PASSWORD`. Jeśli masz zalogowane `gh`, robi to sam; jeśli nie, otwiera stronę sekretów i kopiuje wartość do schowka. Od następnego builda CI podpisuje aplikację tym certyfikatem. Po pierwszej instalacji takiego builda nadaj uprawnienia jeszcze raz (zmienia się podpis); kolejne aktualizacje już ich nie ruszą.
-
-Bez sekretów wszystko działa, tylko po każdej aktualizacji trzeba ponownie włączyć BetterGlide w *Prywatność i ochrona → Dostępność* oraz *Nagrywanie ekranu* (albo uruchomić `tccutil reset Accessibility com.betterglide.BetterGlide`).
+1. Pobierany jest `BetterGlide.dmg`.
+2. Aplikacja ze środka jest sprawdzana (identyfikator i poprawny podpis z CI).
+3. Jest podpisywana certyfikatem tego Maca.
+4. Podmienia starą wersję w miejscu i uruchamia się sama. Jeśli coś się nie uda, wraca poprzednia wersja.
 
 ## Budowanie ze źródeł
 
@@ -80,12 +76,12 @@ Każdy push buduje projekt na GitHub Actions (`.github/workflows/build.yml`): pr
 | Uprawnienie | Po co | Wymagane |
 |---|---|---|
 | **Dostępność** (Prywatność i ochrona → Dostępność) | lista okien, podnoszenie i fokus, ustawianie pozycji i rozmiaru | tak |
-| **Nagrywanie ekranu** (Prywatność i ochrona → Nagrywanie ekranu) | animacja przesuwania: na czas gestu robiony jest zrzut ekranu, który przesuwa się pod palcami. Nic nie jest zapisywane. Po nadaniu trzeba uruchomić aplikację ponownie | tylko do animacji |
+| **Nagrywanie ekranu** (Prywatność i ochrona → Nagrywanie ekranu) | animacja przesuwania: na czas gestu robiony jest zrzut ekranu, który przesuwa się pod palcami. Nic nie jest zapisywane. Po nadaniu trzeba uruchomić aplikację ponownie (przycisk w oknie konfiguracji) | tylko do animacji |
 | **Monitorowanie wprowadzania** | MultitouchSupport zwykle go nie potrzebuje; nadaj tylko, jeśli test gestu nic nie wykrywa | nie |
 
 Przy pierwszym uruchomieniu (oraz zawsze, gdy brakuje uprawnienia Dostępności) otwiera się okno konfiguracji. Prowadzi ono do właściwych paneli Ustawień systemowych, sprawdza konflikt z gestem systemowym i ma pole do testowania gestu na żywo. Później otworzysz je z menu: *Uprawnienia i konfiguracja gestu…*
 
-> **Uwaga przy developmencie:** build podpisany ad hoc dostaje nowy podpis przy każdej kompilacji, a macOS może wtedy „zapomnieć” zgodę na Dostępność (wpis na liście jest, ale nie działa). Rozwiązania: usuń BetterGlide z listy i dodaj ponownie, uruchom `tccutil reset Accessibility com.betterglide.BetterGlide`, albo podpisuj stałym certyfikatem (Apple Development lub self-signed).
+> **Uwaga przy developmencie:** buildy uruchamiane z Xcode/`build/` nie są przenoszone ani przepodpisywane, więc po każdej kompilacji macOS może „zapomnieć” zgodę na Dostępność. Użyj przycisku **Napraw** w oknie konfiguracji albo `make install`.
 
 ### Konflikt z gestem systemowym
 
@@ -121,7 +117,9 @@ BetterGlide/
 │  ├─ DisplayConfigObserver CGDisplayRegisterReconfigurationCallback + didChangeScreenParameters
 │  ├─ LayoutStore          JSON w ~/Library/Application Support/BetterGlide/layouts.json + LayoutMatcher
 │  └─ LayoutManager        zapisy (zdarzeniowe) i przywracanie po zmianie monitorów
-├─ Update/       ReleaseInfo (GitHub API), UpdateController (sprawdzanie), UpdateInstaller (pobranie, podmiana, restart)
+├─ Update/       ReleaseInfo (GitHub API), UpdateController (sprawdzanie aktualizacji)
+├─ Install/      SelfInstaller (przeniesienie do Aplikacji + własny podpis), LocalSigner (certyfikat tego Maca),
+│                UpdateInstaller (pobranie, weryfikacja, podpis, podmiana), AppReplacer, Shell
 ├─ UI/           MenuBarController, SettingsView, OnboardingView, UpdateView, Glass (Liquid Glass + fallback), WindowPresenter
 ├─ Resources/    Assets.xcassets z ikoną (generuje ją scripts/make-icon.py)
 └─ Settings/     AppSettings (UserDefaults), Permissions, LoginItem (SMAppService)
@@ -196,7 +194,7 @@ log stream --predicate 'subsystem == "com.betterglide.BetterGlide"' --level debu
 
 ## Dalsze kroki
 
-- Podpis Developer ID + Hardened Runtime + notaryzacja (`xcrun notarytool`). Usunie ostrzeżenie Gatekeepera przy pierwszej instalacji. Hardened Runtime nie blokuje `dlopen` frameworków systemowych.
+- Podpis Developer ID + notaryzacja (`xcrun notarytool`, płatne konto Apple Developer). Usunie jednorazowe „Otwórz mimo to” przy pierwszej instalacji.
 - Ikona w formacie Icon Composer (`.icon`) z pełnym efektem Liquid Glass systemu; obecna to klasyczny PNG w stylu szkła.
 - Lokalizacja EN.
 - Opcjonalnie: przełączanie także między Spaces po dojściu do krawędzi listy.

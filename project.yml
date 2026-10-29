@@ -58,6 +58,8 @@ targets:
       - path: BetterGlide/Layout/DisplayConfiguration.swift
       - path: BetterGlide/Transition/SlideMath.swift
       - path: BetterGlide/Update/ReleaseInfo.swift
+      - path: BetterGlide/Install/LocalSigner.swift
+      - path: BetterGlide/Install/Shell.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.betterglide.BetterGlideTests

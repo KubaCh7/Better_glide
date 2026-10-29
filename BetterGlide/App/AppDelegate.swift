@@ -19,6 +19,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let log = Logger(subsystem: "com.betterglide.BetterGlide", category: "app")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Move to Applications / adopt this Mac's stable signature first (relaunches if needed).
+        if SelfInstaller.prepareIfNeeded() { return }
+        SelfInstaller.resetStalePermissionsIfNeeded()
+
         // Global AX timeout: an unresponsive app must never block the main thread for long.
         AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 0.5)
 
