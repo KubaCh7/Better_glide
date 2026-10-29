@@ -6,6 +6,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let gestureMonitor = GestureMonitor()
     private let tracker = WindowTracker()
     private lazy var switcher = WindowSwitcher(tracker: tracker, settings: settings)
+    private var menuBar: MenuBarController?
+    private var activationObserver: NSObjectProtocol?
     private let log = Logger(subsystem: "com.snapback.SnapBack", category: "app")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -13,13 +15,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 0.5)
         if !AX.isTrusted { AX.requestTrust() }
 
+        menuBar = MenuBarController(settings: settings, switcher: switcher, actions: .init(
+            saveLayout: {},
+            restoreLayout: {},
+            savedWindowCount: { 0 },
+            openSettings: {},
+            openOnboarding: { Permissions.requestAccessibility() }
+        ))
+
         applySettings()
         settings.onChange = { [weak self] in self?.applySettings() }
 
+        switcher.onSwitch = { [weak self] _ in self?.menuBar?.refreshIndicator() }
         gestureMonitor.onSwipe = { [weak self] direction in
             self?.switcher.handle(direction)
         }
         gestureMonitor.start()
+
+        // Keep the "2/3" indicator current when focus changes by other means (click, Cmd+Tab).
+        activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.menuBar?.refreshIndicator()
+        }
+        menuBar?.refreshIndicator()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -29,5 +48,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func applySettings() {
         tracker.excludedBundleIDs = Set(settings.excludedBundleIDs)
         gestureMonitor.update(configuration: settings.swipeConfiguration)
+        menuBar?.refreshIndicator()
     }
 }
