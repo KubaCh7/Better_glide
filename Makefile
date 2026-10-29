@@ -1,4 +1,4 @@
-# BetterGlide — convenience targets. Requires Xcode 15+ and XcodeGen (`brew install xcodegen`).
+# BetterGlide — convenience targets. Requires Xcode 26+ and XcodeGen (`brew install xcodegen`).
 PROJECT  := BetterGlide.xcodeproj
 DERIVED  := build
 DEBUG    := $(DERIVED)/Build/Products/Debug

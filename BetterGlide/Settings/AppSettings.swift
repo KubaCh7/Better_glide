@@ -26,6 +26,7 @@ final class AppSettings: ObservableObject {
     @Published var showPositionInMenuBar: Bool { didSet { store(showPositionInMenuBar, Keys.showPosition) } }
     @Published var autoRestoreLayout: Bool { didSet { store(autoRestoreLayout, Keys.autoRestore) } }
     @Published var excludedBundleIDs: [String] { didSet { store(excludedBundleIDs, Keys.excluded) } }
+    @Published var autoCheckUpdates: Bool { didSet { store(autoCheckUpdates, Keys.autoCheckUpdates) } }
     @Published var hasCompletedOnboarding: Bool { didSet { store(hasCompletedOnboarding, Keys.onboarding) } }
 
     private enum Keys {
@@ -39,6 +40,7 @@ final class AppSettings: ObservableObject {
         static let autoRestore = "autoRestoreLayout"
         static let excluded = "excludedBundleIDs"
         static let onboarding = "hasCompletedOnboarding"
+        static let autoCheckUpdates = "autoCheckUpdates"
     }
 
     private let defaults: UserDefaults
@@ -55,6 +57,7 @@ final class AppSettings: ObservableObject {
             Keys.autoRestore: true,
             Keys.excluded: [String](),
             Keys.onboarding: false,
+            Keys.autoCheckUpdates: true,
         ])
         isEnabled = defaults.bool(forKey: Keys.enabled)
         // First launch: prefer 3 fingers unless the system already uses 3-finger horizontal swipes.
@@ -71,6 +74,7 @@ final class AppSettings: ObservableObject {
         autoRestoreLayout = defaults.bool(forKey: Keys.autoRestore)
         excludedBundleIDs = defaults.stringArray(forKey: Keys.excluded) ?? []
         hasCompletedOnboarding = defaults.bool(forKey: Keys.onboarding)
+        autoCheckUpdates = defaults.bool(forKey: Keys.autoCheckUpdates)
     }
 
     var swipeConfiguration: SwipeConfiguration {

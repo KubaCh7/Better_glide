@@ -6,7 +6,10 @@ import SwiftUI
 final class WindowPresenter: NSObject, NSWindowDelegate {
     private var windows: [String: NSWindow] = [:]
 
-    func show<Content: View>(id: String, title: String, @ViewBuilder content: () -> Content) {
+    /// - Parameter glass: content draws behind a transparent title bar (Liquid Glass windows
+    ///   with their own backdrop).
+    func show<Content: View>(id: String, title: String, glass: Bool = false,
+                             @ViewBuilder content: () -> Content) {
         if let existing = windows[id] {
             bringToFront(existing)
             return
@@ -14,6 +17,12 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
         let window = NSWindow(contentViewController: NSHostingController(rootView: content()))
         window.title = title
         window.styleMask = [.titled, .closable, .miniaturizable]
+        if glass {
+            window.styleMask.insert(.fullSizeContentView)
+            window.titlebarAppearsTransparent = true
+            window.titleVisibility = .hidden
+            window.isMovableByWindowBackground = true
+        }
         window.isReleasedWhenClosed = false
         window.identifier = NSUserInterfaceItemIdentifier(id)
         window.delegate = self

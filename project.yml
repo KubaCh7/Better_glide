@@ -25,6 +25,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.betterglide.BetterGlide
         INFOPLIST_FILE: Config/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
         # No App Sandbox: Accessibility control of other apps and private
         # MultitouchSupport are not allowed in the sandbox.
@@ -56,6 +57,7 @@ targets:
       - path: BetterGlide/Layout/LayoutStore.swift
       - path: BetterGlide/Layout/DisplayConfiguration.swift
       - path: BetterGlide/Transition/SlideMath.swift
+      - path: BetterGlide/Update/ReleaseInfo.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.betterglide.BetterGlideTests

@@ -2,8 +2,9 @@
 
 Aplikacja macOS działająca w pasku menu. Przełącza **zwykłe okna** (niezmaksymalizowane) gestem 3 lub 4 palców, w stałej, przestrzennej kolejności od lewej do prawej, tak jakby każde okno było osobnym pulpitem. Dodatkowo zapamiętuje układ okien osobno dla każdej konfiguracji monitorów i przywraca go po podłączeniu lub odłączeniu ekranu.
 
-- Swift, AppKit (pasek menu, nakładki) + SwiftUI (ustawienia, onboarding)
-- macOS 14 Sonoma lub nowszy, Apple Silicon i Intel (CI buduje na macOS 15 z Xcode 16)
+- Swift, AppKit (pasek menu, nakładki) + SwiftUI (ustawienia, onboarding, aktualizacje)
+- Wygląd Liquid Glass na macOS 26+ (szklane panele i przyciski `glassEffect`, systemowe kontrolki z SDK 26); na macOS 14–15 materiały (`regularMaterial`)
+- macOS 14 Sonoma lub nowszy, Apple Silicon i Intel (CI buduje na macOS 26 z Xcode 26)
 - Bez ikony w Docku (`LSUIElement`), bez sandboxa, dystrybucja poza App Store
 
 ## Instalacja (DMG)
@@ -19,11 +20,32 @@ Aplikacja macOS działająca w pasku menu. Przełącza **zwykłe okna** (niezmak
    Alternatywnie spróbuj ją otworzyć, a potem wybierz *Ustawienia systemowe → Prywatność i ochrona → Otwórz mimo to*.
 4. Uruchom BetterGlide z Aplikacji. Ikona pojawi się w pasku menu (nie w Docku), a okno konfiguracji poprowadzi przez nadanie uprawnienia Dostępności.
 
-**Aktualizacja:** pobierz nowy DMG i zastąp aplikację w folderze Aplikacje. Nowy build ma inny podpis, więc macOS może przestać honorować zgodę na Dostępność. Wtedy w *Ustawienia systemowe → Prywatność i ochrona → Dostępność* usuń BetterGlide (przycisk −) i włącz ponownie (albo uruchom `tccutil reset Accessibility com.betterglide.BetterGlide`).
+### Aktualizacje w aplikacji
+
+BetterGlide sam sprawdza aktualizacje: 15 s po uruchomieniu, a potem raz dziennie (jedno zapytanie do GitHub Releases). Możesz to wyłączyć w *Ustawienia → Aktualizacje*. Gdy pojawi się nowy build, otworzy się okno z listą zmian i przyciskiem **Zainstaluj i uruchom ponownie**. Ręcznie: menu w pasku → *Sprawdź aktualizacje…*
+
+Instalacja przebiega tak:
+
+1. Pobierany jest `BetterGlide.dmg` z najnowszego release'u.
+2. Aplikacja ze środka jest sprawdzana: zgodny identyfikator i poprawny podpis.
+3. Stara wersja jest podmieniana w tym samym miejscu (np. `/Applications`), a nowa uruchamia się sama. Jeśli kopiowanie się nie uda, wraca poprzednia wersja.
+4. Plik pobrany przez aplikację nie dostaje flagi kwarantanny, więc `xattr` nie jest już potrzebne.
+
+### Jednorazowo: stały podpis, żeby aktualizacje nie kasowały uprawnień
+
+macOS przypisuje zgody na *Dostępność* i *Nagrywanie ekranu* do podpisu aplikacji. Buildy podpisane ad hoc mają za każdym razem inny podpis, więc **po każdej aktualizacji trzeba by nadawać uprawnienia od nowa**. Rozwiązanie bez płatnego konta Apple Developer to własny certyfikat. Na Macu, w katalogu repozytorium, uruchom:
+
+```bash
+scripts/create-signing-certificate.sh
+```
+
+Skrypt tworzy certyfikat w `~/BetterGlide-signing` i zapisuje go w GitHubie jako sekrety `SIGNING_CERT_P12` i `SIGNING_CERT_PASSWORD`. Jeśli masz zalogowane `gh`, robi to sam; jeśli nie, otwiera stronę sekretów i kopiuje wartość do schowka. Od następnego builda CI podpisuje aplikację tym certyfikatem. Po pierwszej instalacji takiego builda nadaj uprawnienia jeszcze raz (zmienia się podpis); kolejne aktualizacje już ich nie ruszą.
+
+Bez sekretów wszystko działa, tylko po każdej aktualizacji trzeba ponownie włączyć BetterGlide w *Prywatność i ochrona → Dostępność* oraz *Nagrywanie ekranu* (albo uruchomić `tccutil reset Accessibility com.betterglide.BetterGlide`).
 
 ## Budowanie ze źródeł
 
-Wymagania: Xcode 15+ oraz [XcodeGen](https://github.com/yonaskolb/XcodeGen). Projekt `.xcodeproj` jest generowany z pliku `project.yml` i nie trafia do repozytorium.
+Wymagania: Xcode 26+ (SDK z Liquid Glass) oraz [XcodeGen](https://github.com/yonaskolb/XcodeGen). Projekt `.xcodeproj` jest generowany z pliku `project.yml` i nie trafia do repozytorium.
 
 ```bash
 brew install xcodegen
@@ -99,7 +121,9 @@ BetterGlide/
 │  ├─ DisplayConfigObserver CGDisplayRegisterReconfigurationCallback + didChangeScreenParameters
 │  ├─ LayoutStore          JSON w ~/Library/Application Support/BetterGlide/layouts.json + LayoutMatcher
 │  └─ LayoutManager        zapisy (zdarzeniowe) i przywracanie po zmianie monitorów
-├─ UI/           MenuBarController, SettingsView, OnboardingView, WindowPresenter
+├─ Update/       ReleaseInfo (GitHub API), UpdateController (sprawdzanie), UpdateInstaller (pobranie, podmiana, restart)
+├─ UI/           MenuBarController, SettingsView, OnboardingView, UpdateView, Glass (Liquid Glass + fallback), WindowPresenter
+├─ Resources/    Assets.xcassets z ikoną (generuje ją scripts/make-icon.py)
 └─ Settings/     AppSettings (UserDefaults), Permissions, LoginItem (SMAppService)
 SwipeProbe/      prototyp CLI z etapu (a)
 BetterGlideTests/   testy logiki (bez uruchamiania aplikacji)
@@ -172,6 +196,7 @@ log stream --predicate 'subsystem == "com.betterglide.BetterGlide"' --level debu
 
 ## Dalsze kroki
 
-- Podpis Developer ID + Hardened Runtime + notaryzacja (`xcrun notarytool`). Hardened Runtime nie blokuje `dlopen` frameworków systemowych.
-- Ikona aplikacji, lokalizacja EN.
+- Podpis Developer ID + Hardened Runtime + notaryzacja (`xcrun notarytool`). Usunie ostrzeżenie Gatekeepera przy pierwszej instalacji. Hardened Runtime nie blokuje `dlopen` frameworków systemowych.
+- Ikona w formacie Icon Composer (`.icon`) z pełnym efektem Liquid Glass systemu; obecna to klasyczny PNG w stylu szkła.
+- Lokalizacja EN.
 - Opcjonalnie: przełączanie także między Spaces po dojściu do krawędzi listy.

@@ -9,6 +9,9 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         var savedWindowCount: () -> Int
         var openSettings: () -> Void
         var openOnboarding: () -> Void
+        var showUpdates: () -> Void
+        /// Build number of an available update, if any.
+        var availableUpdate: () -> Int?
     }
 
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -56,6 +59,12 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
+        if let build = actions.availableUpdate() {
+            let item = addItem("Dostępna aktualizacja (build \(build))…", action: #selector(showUpdates))
+            item.image = NSImage(systemSymbolName: "arrow.down.circle.fill", accessibilityDescription: nil)
+            menu.addItem(.separator())
+        }
+
         if !AX.isTrusted {
             let item = addItem("⚠︎ Nadaj uprawnienie Dostępności…", action: #selector(openOnboarding))
             item.toolTip = "Bez niego BetterGlide nie widzi i nie przełącza okien."
@@ -81,6 +90,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
         addItem("Ustawienia…", action: #selector(openSettings), key: ",")
         addItem("Uprawnienia i konfiguracja gestu…", action: #selector(openOnboarding))
+        addItem("Sprawdź aktualizacje…", action: #selector(showUpdates))
         menu.addItem(.separator())
         addItem("Zakończ BetterGlide", action: #selector(quit), key: "q")
     }
@@ -194,6 +204,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     @objc private func restoreLayout() { actions.restoreLayout() }
     @objc private func openSettings() { actions.openSettings() }
     @objc private func openOnboarding() { actions.openOnboarding() }
+    @objc private func showUpdates() { actions.showUpdates() }
     @objc private func quit() { NSApp.terminate(nil) }
 
     // MARK: - Helpers

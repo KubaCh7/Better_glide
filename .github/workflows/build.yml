@@ -7,7 +7,8 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    # macOS 26 image: Xcode 26 SDK (Liquid Glass APIs) and a recent OS for the MultitouchSupport check.
+    runs-on: macos-26
     # Needed to publish the DMG as a GitHub Release.
     permissions:
       contents: write
@@ -41,6 +42,26 @@ jobs:
           CURRENT_PROJECT_VERSION=${{ github.run_number }}
           build
 
+      # With the SIGNING_CERT_* secrets (scripts/create-signing-certificate.sh) builds keep the
+      # same identity, so macOS keeps Accessibility/Screen Recording across in-app updates.
+      - name: Sign
+        env:
+          SIGNING_CERT_P12: ${{ secrets.SIGNING_CERT_P12 }}
+          SIGNING_CERT_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
+        run: |
+          APP=build/Build/Products/Release/BetterGlide.app
+          if [ -n "$SIGNING_CERT_P12" ]; then
+            scripts/sign-app.sh "$APP"
+          else
+            echo "::warning::No SIGNING_CERT_P12 secret: release stays ad-hoc signed, so permissions reset after each update."
+            # Self-test of the signing pipeline with a throwaway certificate on a copy of the app.
+            scripts/create-signing-certificate.sh --local-only "$RUNNER_TEMP/test-cert"
+            cp -R "$APP" "$RUNNER_TEMP/SignTest.app"
+            SIGNING_CERT_P12="$(cat "$RUNNER_TEMP/test-cert/cert.p12.base64")" \
+            SIGNING_CERT_PASSWORD="$(cat "$RUNNER_TEMP/test-cert/password.txt")" \
+              scripts/sign-app.sh "$RUNNER_TEMP/SignTest.app"
+          fi
+
       - name: Package DMG
         run: |
           mkdir -p dist
@@ -54,6 +75,7 @@ jobs:
           name: BetterGlide-${{ github.sha }}
           path: dist/
 
+      # The in-app updater reads this release: keep the "BetterGlide (build N)" title format.
       # Every push to a branch (not pull requests) replaces the "latest-build" release,
       # so the download link below always points to the newest DMG:
       # https://github.com/<owner>/<repo>/releases/latest/download/BetterGlide.dmg
@@ -67,7 +89,9 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "BetterGlide (build ${{ github.run_number }})" \
             --latest \
-            --notes "Automatyczny build z gałęzi \`${GITHUB_REF_NAME}\`, commit ${GITHUB_SHA::7}.
+            --notes "**Co nowego:** $(git log -1 --format=%s)
+
+          Automatyczny build z gałęzi \`${GITHUB_REF_NAME}\`, commit ${GITHUB_SHA::7}. Jeśli masz już BetterGlide, zaktualizujesz go z menu: *Sprawdź aktualizacje…*
 
           **Instalacja:** otwórz BetterGlide.dmg i przeciągnij BetterGlide do folderu Aplikacje.
 

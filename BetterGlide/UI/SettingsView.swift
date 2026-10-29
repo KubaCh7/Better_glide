@@ -13,8 +13,10 @@ final class GestureFeed: ObservableObject {
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var feed: GestureFeed
+    @ObservedObject var updates: UpdateController
     var savedConfigurationCount: () -> Int
     var clearLayouts: () -> Void
+    var showUpdates: () -> Void
 
     @State private var launchAtLogin = LoginItem.isEnabled
     @State private var loginError: String?
@@ -69,11 +71,23 @@ struct SettingsView: View {
                         clearLayouts()
                         layoutsCleared = true
                     }
+                    .glassButton()
                 }
             }
 
             Section("Wykluczone aplikacje") {
                 ExcludedAppsEditor(settings: settings)
+            }
+
+            Section("Aktualizacje") {
+                LabeledContent("Wersja", value: "\(updates.currentVersion) (build \(updates.currentBuild))")
+                Toggle("Sprawdzaj aktualizacje automatycznie", isOn: $settings.autoCheckUpdates)
+                HStack {
+                    Text(updateStatus).foregroundStyle(.secondary)
+                    Spacer()
+                    Button(updates.availableRelease == nil ? "Sprawdź teraz" : "Zainstaluj…", action: showUpdates)
+                        .glassButton(prominent: updates.availableRelease != nil)
+                }
             }
 
             Section("Ogólne") {
@@ -106,6 +120,19 @@ struct SettingsView: View {
     }
 }
 
+extension SettingsView {
+    fileprivate var updateStatus: String {
+        switch updates.state {
+        case .idle: return "Nie sprawdzano"
+        case .checking: return "Sprawdzanie…"
+        case .upToDate: return "Masz najnowszą wersję"
+        case .available(let release): return "Dostępny build \(release.build)"
+        case .downloading: return "Pobieranie…"
+        case .failed: return "Nie udało się sprawdzić"
+        }
+    }
+}
+
 struct ConflictNotice: View {
     let conflict: String
     let fingerCount: Int
@@ -119,6 +146,7 @@ struct ConflictNotice: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button("Otwórz ustawienia Gładzika") { TrackpadPreferences.openTrackpadSettings() }
+                .glassButton()
         }
     }
 }
@@ -134,7 +162,9 @@ struct ScreenRecordingNotice: View {
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Button("Nadaj uprawnienie…") { Permissions.requestScreenRecording() }
+                    .glassButton(prominent: true)
                 Button("Uruchom ponownie BetterGlide") { Permissions.relaunch() }
+                    .glassButton()
             }
         }
     }

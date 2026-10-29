@@ -12,6 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuBar: MenuBarController?
     private let windows = WindowPresenter()
     private let gestureFeed = GestureFeed()
+    private let updates = UpdateController()
+    private var automaticUpdateChecks: Bool?
     private var activationObserver: NSObjectProtocol?
     private var indicatorRefresh: DispatchWorkItem?
     private let log = Logger(subsystem: "com.betterglide.BetterGlide", category: "app")
@@ -25,8 +27,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             restoreLayout: { [weak self] in self?.layoutManager.restore() },
             savedWindowCount: { [weak self] in self?.layoutManager.savedWindowCount ?? 0 },
             openSettings: { [weak self] in self?.showSettings() },
-            openOnboarding: { [weak self] in self?.showOnboarding() }
+            openOnboarding: { [weak self] in self?.showOnboarding() },
+            showUpdates: { [weak self] in self?.showUpdates() },
+            availableUpdate: { [weak self] in self?.updates.availableRelease?.build }
         ))
+        updates.onUpdateFound = { [weak self] _ in self?.showUpdates() }
 
         applySettings()
         settings.onChange = { [weak self] in self?.applySettings() }
@@ -66,6 +71,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func applySettings() {
         tracker.excludedBundleIDs = Set(settings.excludedBundleIDs)
         gestureMonitor.update(configuration: settings.swipeConfiguration)
+        if automaticUpdateChecks != settings.autoCheckUpdates {
+            automaticUpdateChecks = settings.autoCheckUpdates
+            updates.setAutomaticChecks(settings.autoCheckUpdates)
+        }
         // Debounced: dragging the sensitivity slider fires many changes in a row.
         indicatorRefresh?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.menuBar?.refreshIndicator() }
@@ -80,14 +89,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             SettingsView(
                 settings: settings,
                 feed: gestureFeed,
+                updates: updates,
                 savedConfigurationCount: { [weak self] in self?.layoutManager.savedConfigurationCount ?? 0 },
-                clearLayouts: { [weak self] in self?.layoutManager.clearAll() }
+                clearLayouts: { [weak self] in self?.layoutManager.clearAll() },
+                showUpdates: { [weak self] in self?.showUpdates() }
             )
         }
     }
 
     private func showOnboarding() {
-        windows.show(id: "onboarding", title: "BetterGlide — konfiguracja") {
+        windows.show(id: "onboarding", title: "BetterGlide — konfiguracja", glass: true) {
             OnboardingView(
                 settings: settings,
                 feed: gestureFeed,
@@ -97,6 +108,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self?.menuBar?.refreshIndicator()
                 }
             )
+        }
+    }
+
+    private func showUpdates() {
+        windows.show(id: "updates", title: "Aktualizacje BetterGlide", glass: true) {
+            UpdateView(updates: updates, onClose: { [weak self] in self?.windows.close(id: "updates") })
         }
     }
 }
