@@ -1,0 +1,58 @@
+# XcodeGen spec — run `xcodegen generate` (or `make project`) to create SnapBack.xcodeproj.
+name: SnapBack
+options:
+  bundleIdPrefix: com.snapback
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Ad-hoc signing; Developer ID signing + notarization is a later step (see README).
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+targets:
+  SnapBack:
+    type: application
+    platform: macOS
+    sources:
+      - path: SnapBack
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.snapback.SnapBack
+        INFOPLIST_FILE: Config/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        # No App Sandbox: Accessibility control of other apps and private
+        # MultitouchSupport are not allowed in the sandbox.
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: NO
+    scheme:
+      testTargets:
+        - SnapBackTests
+  SwipeProbe:
+    type: tool
+    platform: macOS
+    sources:
+      - path: SwipeProbe
+      - path: SnapBack/Gesture/MultitouchBridge.swift
+      - path: SnapBack/Gesture/SwipeDetector.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.snapback.SwipeProbe
+    scheme: {}
+  SnapBackTests:
+    type: bundle.unit-test
+    platform: macOS
+    # Logic-only tests: the pure source files are compiled straight into the
+    # test bundle, so the menu bar app is never launched as a test host.
+    sources:
+      - path: SnapBackTests
+      - path: SnapBack/Gesture/SwipeDetector.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.snapback.SnapBackTests
+        GENERATE_INFOPLIST_FILE: YES

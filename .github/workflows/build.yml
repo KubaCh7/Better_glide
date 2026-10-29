@@ -1,0 +1,43 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build SwipeProbe
+        run: xcodebuild -project SnapBack.xcodeproj -scheme SwipeProbe -configuration Debug -derivedDataPath build -quiet build
+
+      - name: Unit tests
+        run: xcodebuild -project SnapBack.xcodeproj -scheme SnapBack -configuration Debug -derivedDataPath build -destination 'platform=macOS' -quiet test
+
+      - name: Build SnapBack (Release)
+        run: xcodebuild -project SnapBack.xcodeproj -scheme SnapBack -configuration Release -derivedDataPath build -quiet build
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          ditto -c -k --keepParent build/Build/Products/Release/SnapBack.app dist/SnapBack.zip
+          cp build/Build/Products/Debug/SwipeProbe dist/SwipeProbe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SnapBack-${{ github.sha }}
+          path: dist/
